@@ -1,0 +1,140 @@
+import os
+import time
+import requests
+from colorama import Fore, Style, init
+from termcolor import colored
+from pyfiglet import Figlet
+import random
+
+# تهيئة مكتبة colorama
+init(autoreset=True)
+
+# قائمة الألوان المتاحة
+colors = [Fore.RED, Fore.GREEN, Fore.YELLOW, Fore.BLUE, Fore.MAGENTA, Fore.CYAN, Fore.WHITE]
+used_colors = set()
+
+def get_random_color():
+    """الحصول على لون عشوائي لم يُستخدم من قبل."""
+    available_colors = [color for color in colors if color not in used_colors]
+    if not available_colors:
+        return Fore.WHITE  # العودة إلى اللون الأبيض إذا تم استخدام جميع الألوان
+    color = random.choice(available_colors)
+    used_colors.add(color)
+    return color
+
+def print_logo():
+    """عرض لوجو ASCII مع النص المدخل من قبل المستخدم وإرسالها إلى بوت تلغرام."""
+    # طلب توكن بوت التلغرام
+    token = input(get_random_color() + "Enter your Telegram bot token: " + Style.RESET_ALL).strip()
+    chat_id = input(get_random_color() + "Enter your Telegram chat ID: " + Style.RESET_ALL).strip()
+    
+    # طلب النص الذي يريده المستخدم
+    user_text = input(get_random_color() + "Enter the text for the ASCII logo: " + Style.RESET_ALL).strip()
+    
+    # إنشاء كائن Figlet مع النمط الذي تفضله
+    f = Figlet(font='big')  # يمكنك تغيير 'big' إلى أي نمط تفضله
+
+    # توليد النص بلوجو ASCII
+    ascii_art = f.renderText(user_text)
+    
+    # عرض اللوجو
+    print(get_random_color() + ascii_art + Style.RESET_ALL)
+    
+    # إرسال اللوجو إلى بوت التلغرام
+    send_to_telegram_bot(token, chat_id, ascii_art)
+
+def send_to_telegram_bot(token, chat_id, message):
+    """إرسال رسالة إلى بوت تلغرام."""
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    payload = {
+        'chat_id': chat_id,
+        'text': message
+    }
+    response = requests.post(url, data=payload)
+    if response.status_code == 200:
+        print(get_random_color() + "Message sent to Telegram bot successfully." + Style.RESET_ALL)
+    else:
+        print(get_random_color() + "Failed to send message to Telegram bot." + Style.RESET_ALL)
+
+def check_password():
+    """التحقق من كلمة السر."""
+    password = "VENOM"
+    user_input = input(get_random_color() + "Enter the password: " + Style.RESET_ALL).strip()
+    if user_input == password:
+        print(get_random_color() + "Password is correct. Proceeding..." + Style.RESET_ALL)
+        return True
+    else:
+        print(get_random_color() + "Incorrect password. Exiting..." + Style.RESET_ALL)
+        return False
+
+def load_used_names(filename):
+    """تحميل الأسماء المستخدمة من ملف."""
+    if os.path.exists(filename):
+        with open(filename, 'r') as file:
+            return set(line.strip() for line in file)
+    return set()
+
+def save_used_name(filename, name):
+    """حفظ اسم مستخدم إلى الملف."""
+    with open(filename, 'a') as file:
+        file.write(name + '\n')
+
+def is_name_used(name, used_names):
+    """التحقق مما إذا كان الاسم قد تم استخدامه من قبل."""
+    return name in used_names
+
+def verify_names(used_names_file, token, chat_id):
+    """التحقق من الأسماء المدخلة وإظهار الحالة مع نسبة مئوية وإرسال الأسماء غير المستخدمة إلى بوت تلغرام."""
+    used_names = load_used_names(used_names_file)
+    unused_names = []
+
+    # طلب عدد الإيميلات من المستخدم
+    num_emails = int(input(get_random_color() + "Enter the number of emails to verify: " + Style.RESET_ALL))
+
+    for i in range(num_emails):
+        name = input(get_random_color() + f"Enter email {i+1}: " + Style.RESET_ALL).strip()
+        
+        # محاكاة عملية الفحص بنسبة مئوية
+        for percentage in range(1, 101):
+            time.sleep(0.05)  # تأخير لتوضيح التقدم
+            print(get_random_color() + f"Checking... {percentage}% completed" + Style.RESET_ALL, end='\r')
+        
+        if is_name_used(name, used_names):
+            print(get_random_color() + f"\nThe email '{name}' has been used before." + Style.RESET_ALL)
+        else:
+            print(get_random_color() + f"\nThe email '{name}' is available." + Style.RESET_ALL)
+            unused_names.append(name)  # إضافة الإيميلات غير المستخدمة إلى القائمة
+            used_names.add(name)  # تحديث مجموعة الإيميلات المستخدمة
+            save_used_name(used_names_file, name)
+    
+    # إرسال الأسماء غير المستخدمة إلى بوت تلغرام
+    for email in unused_names:
+        send_to_telegram_bot(token, chat_id, email)
+
+def main():
+    """الوظيفة الرئيسية للتفاعل مع المستخدم."""
+    print(get_random_color() + """
+ _               _    _  _____ ______ _   _ 
+| |        /\   | |  | |/ ____|  ____| \ | |
+| |       /  \  | |__| | |    | |__  |  \| |
+| |      / /\ \ |  __  | |    |  __| | . ` |
+| |____ / ____ \| |  | | |____| |____| |\  |
+|______/_/    \_\_|  |_|\_____|______|_| \_|
+""" + Style.RESET_ALL)
+    
+    if check_password():
+        print(get_random_color() + "Select an option:\n1. Create Logo\n2. Verify Emails" + Style.RESET_ALL)
+        choice = input(get_random_color() + "Enter your choice (1 or 2): " + Style.RESET_ALL).strip()
+        
+        if choice == '1':
+            print_logo()
+        elif choice == '2':
+            token = input(get_random_color() + "Enter your Telegram bot token: " + Style.RESET_ALL).strip()
+            chat_id = input(get_random_color() + "Enter your Telegram chat ID: " + Style.RESET_ALL).strip()
+            used_names_file = 'used_names.txt'
+            verify_names(used_names_file, token, chat_id)
+        else:
+            print(get_random_color() + "Invalid choice. Exiting..." + Style.RESET_ALL)
+
+if __name__ == "__main__":
+    main()
